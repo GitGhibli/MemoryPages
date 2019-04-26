@@ -8,7 +8,7 @@
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class MULTITHREADREADUE4_API UMappedFileReader : public UActorComponent
+class MEMORYPAGESUE4_API UMappedFileReader : public UActorComponent
 {
 	GENERATED_BODY()
 

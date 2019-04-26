@@ -1,11 +1,24 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MappedFileReader.h"
-#include <Windows.h>
 
-#define BUF_SIZE 256
+#include "Windows.h"
+
+struct MyStruct
+{
+	int MyNumber;
+
+	int MyAnotherNumber;
+
+	char MyText[255];
+
+	char MyAnotherText[255];
+};
+
+#define BUF_SIZE 518
 
 TCHAR szName[] = TEXT("MyTestMapFile");
+
 
 // Sets default values for this component's properties
 UMappedFileReader::UMappedFileReader()
@@ -25,23 +38,28 @@ void UMappedFileReader::BeginPlay()
 
 	HANDLE hMapFile;
 
-	LPCTSTR pBuf;
-
 	hMapFile = OpenFileMapping(
 		FILE_MAP_ALL_ACCESS,
 		FALSE,
 		szName);
 
-	pBuf = (LPTSTR)MapViewOfFile(
-		hMapFile,
-		FILE_MAP_ALL_ACCESS,
-		0,
-		0,
-		BUF_SIZE);
+	if (hMapFile != NULL) {
+		char* pBuf;
+		pBuf = (char*)MapViewOfFile(
+			hMapFile,
+			FILE_MAP_ALL_ACCESS,
+			0,
+			0,
+			BUF_SIZE);
 
-	char znak = (char)pBuf[0];
+		MyStruct* myStruct;
 
-	CloseHandle(hMapFile);
+		if (pBuf != NULL) {
+			myStruct = (MyStruct*)pBuf;
+		}
+
+		CloseHandle(hMapFile);
+	}
 }
 
 
