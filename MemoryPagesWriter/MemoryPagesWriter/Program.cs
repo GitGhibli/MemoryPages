@@ -29,17 +29,27 @@ namespace MemoryPagesWriter
             using (var virtualMappedFile = MemoryMappedFile.CreateNew("MyTestMapFile", 10000))
             {
                 bool mutexCreated;
-
-                Mutex mutex = new Mutex(true, "myTestMapFileMutext", out mutexCreated);
+                
                 using (MemoryMappedViewStream stream = virtualMappedFile.CreateViewStream())
                 {
-                    BinaryWriter writer = new BinaryWriter(stream);
-                    writer.Write(GetByteArray(new MyStruct { MyNumber = 1, MyAnotherNumber = 9027, MyText = "Hello World!", MyAnotherText = "Hello another World!" }));
-                    writer.Flush();
-                }
 
-                //C++ ignores this
-                mutex.ReleaseMutex();
+                    BinaryWriter writer = new BinaryWriter(stream);
+
+                    int index = 0;
+                    while (true)
+                    {
+                        writer.Seek(0, SeekOrigin.Begin);
+                        Console.ReadKey();
+                        //C++ ignores this
+                        //Mutex mutex = new Mutex(true, "myTestMapFileMutext", out mutexCreated);
+                        writer.Write(GetByteArray(new MyStruct { MyNumber = index++, MyAnotherNumber = 9027, MyText = "Hello World!" + index, MyAnotherText = "Hello another World!" + index }));
+                        writer.Flush();
+
+                        //C++ ignores this
+                        //mutex.ReleaseMutex();
+                    }
+
+                }
             }
         }
 
