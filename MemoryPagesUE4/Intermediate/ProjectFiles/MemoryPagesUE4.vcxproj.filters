@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\..\MemoryPagesUE4.uproject" />
+    <Filter Include="Source">
+      <UniqueIdentifier>{1FC62083-B915-48B7-BB5A-B7523E5D35A3}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Source\MemoryPagesUE4.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <None Include="..\..\Source\MemoryPagesUE4Editor.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <Filter Include="Config">
+      <UniqueIdentifier>{70EC7749-2AE0-4DBD-9202-6342B98E70DD}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Config\DefaultEditor.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultEngine.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultGame.ini">
+      <Filter>Config</Filter>
+    </None>
+    <Filter Include="Source\MemoryPagesUE4">
+      <UniqueIdentifier>{36116BDD-08B9-47D9-BC86-7D2DB10B4E7B}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Source\MemoryPagesUE4\MemoryPagesUE4.Build.cs">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </None>
+    <ClCompile Include="..\..\Source\MemoryPagesUE4\MemoryPagesUE4.cpp">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\MemoryPagesUE4\MemoryPagesUE4.h">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\MemoryPagesUE4\MemoryPagesUE4GameModeBase.cpp">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\MemoryPagesUE4\MemoryPagesUE4GameModeBase.h">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Source\MemoryPagesUE4\MappedFileReader.h">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\MemoryPagesUE4\MappedFileReader.cpp">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
