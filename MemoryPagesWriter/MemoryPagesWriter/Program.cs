@@ -1,69 +1,66 @@
-﻿using System;
-using System.IO;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
-using System.Threading;
+﻿using ECC.Opsu.Gis3D.Contract;
+using System;
+using System.Drawing;
 
 namespace MemoryPagesWriter
 {
-    //slo by najprv poslat info o tom, co sa bude posielat ak to ma byt dynamicke
-    [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
-    struct MyStruct
-    {
-        public int MyNumber;
-
-        public int MyAnotherNumber;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 255)]
-        public string MyText;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 255)]
-        public string MyAnotherText;
-
-    }
-
     class Program
     {
         static void Main(string[] args)
         {
-            using (var virtualMappedFile = MemoryMappedFile.CreateNew("MyTestMapFile", 10000))
+            Layer[] layers = new Layer[] {
+                new Layer { Name = "Layer Name 1", Color = Color.Red, Id = 9027, ParentId = 8611 },
+                new Layer {Name = "Layer Name 2", Color = Color.Green, Id = 7, ParentId = 9611},
+                new Layer {Name = "Layer Name 2", Color = Color.Green, Id = 7, ParentId = 9611},
+                new Layer {Name = "Layer Name 2", Color = Color.Green, Id = 7, ParentId = 9611},
+                new Layer {Name = "Layer Name 2", Color = Color.Green, Id = 7, ParentId = 9611}
+            };
+
+            Gis3DObject[] gis3DObjects = new Gis3DObject[]
             {
-                bool mutexCreated;
-                
-                using (MemoryMappedViewStream stream = virtualMappedFile.CreateViewStream())
+                new Gis3DObject {Id = 1, Name = "Gis3dObject 1", Description = "Description of Gis3dObject1", ShortName = "o1", LayerId=9027, X = 90.9F, Y = 27.27F, Height = 6.6F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+                new Gis3DObject {Id = 2, Name = "Gis3dObject 2", Description = "Description of Gis3dObject2", ShortName = "o2", LayerId=5, X = 10.1F, Y = 27.27F, Height = 11.11F},
+            };
+
+            SetLayersAndObjects(layers, gis3DObjects);
+            GoToLocationCycle();
+        }
+
+        private static void GoToLocationCycle()
+        {
+            int index = 1;
+            float x = 1, y = 1;
+            float floatingPart = 0.5F;
+
+            using(var writer = new GoToLocationMMFWriter())
+            {
+                while (true)
                 {
-
-                    BinaryWriter writer = new BinaryWriter(stream);
-
-                    int index = 0;
-                    while (true)
-                    {
-                        writer.Seek(0, SeekOrigin.Begin);
-                        Console.ReadKey();
-                        //C++ ignores this
-                        //Mutex mutex = new Mutex(true, "myTestMapFileMutext", out mutexCreated);
-                        writer.Write(GetByteArray(new MyStruct { MyNumber = index++, MyAnotherNumber = 9027, MyText = "Hello World!" + index, MyAnotherText = "Hello another World!" + index }));
-                        writer.Flush();
-
-                        //C++ ignores this
-                        //mutex.ReleaseMutex();
-                    }
-
+                    Console.WriteLine("To send 'Go to location message' press any key");
+                    Console.ReadKey();
+                    writer.Write(x * index + floatingPart, y * index * 2 + floatingPart);
+                    Console.WriteLine("Message processed");
+                    index++;
                 }
             }
         }
 
-        static byte[] GetByteArray(MyStruct myStruct)
+        private static void SetLayersAndObjects(Layer[] layers, Gis3DObject[] gis3DObjects)
         {
-            int size = 255 + 255 + 8;
-            byte[] buffer = new byte[size];
-
-            IntPtr memoryPointer = Marshal.AllocHGlobal(size);
-            Marshal.StructureToPtr(myStruct, memoryPointer, true);
-            Marshal.Copy(memoryPointer, buffer, 0, size);
-            Marshal.FreeHGlobal(memoryPointer);
-
-            return buffer;
+            using (var writer = new InitialMemoryPagesWriter(10000))
+            {
+                Console.WriteLine("To send initialization message press any key");
+                Console.ReadKey();
+                writer.Write(layers, gis3DObjects);
+                Console.WriteLine("Message processed");
+            }
         }
+
     }
 }

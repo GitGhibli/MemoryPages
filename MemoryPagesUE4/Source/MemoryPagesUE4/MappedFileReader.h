@@ -7,15 +7,27 @@
 #include "Components/ActorComponent.h"
 #include "MappedFileReader.generated.h"
 
-struct MyStruct
+struct LayerProxy
 {
-	int MyNumber;
+	int Id;
+	int ParentId;
+	char Name[256];
+	byte R;
+	byte G;
+	byte B;
+	byte A;
+};
 
-	int MyAnotherNumber;
-
-	char MyText[255];
-
-	char MyAnotherText[255];
+struct Gis3DObjectProxy
+{
+	int Id;
+	int LayerId;
+	char ShortName[256];
+	char Name[256];
+	char Description[256];
+	float X;
+	float Y;
+	float Height;
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -46,7 +58,12 @@ public:
 		
 private:
 	HANDLE hMapFile;
+	HANDLE GoToFile;
+	bool Initialized = false;
 
-	int lastMessageIndex = 0;
-	MyStruct* myStruct;
+	void ReadInitializationFromMemory(LayerProxy* layers, Gis3DObjectProxy* gisObjects);
+
+	HANDLE GotoMutex;
+	int LastGoToMessageIndex = 0;
+	bool ReadGoToMemory(float* x, float* y);
 };
