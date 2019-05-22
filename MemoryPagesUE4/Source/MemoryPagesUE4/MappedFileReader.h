@@ -79,6 +79,5 @@ private:
 
 	void InitializeGoToFile();
 	void OpenGoToMutex();
-
 	bool ReadGoToMemory(float& x, float& y);
 };

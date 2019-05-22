@@ -24,6 +24,8 @@ void UMappedFileReader::BeginPlay()
 }
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	UnmapViewOfFile(GoToInstruction);
+	//CloseHandle(GoToFile);
 }
 
 // Called every frame
