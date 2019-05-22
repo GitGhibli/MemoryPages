@@ -163,15 +163,21 @@ void UMappedFileReader::ReadInitContent(int contentSize, TArray<FGis3DLayer>* la
 	}
 
 	pointer[contentSize - 1] = true;
+
+	UnmapViewOfFile(pointer);
 }
 
 int UMappedFileReader::GetInitContentSize() {
-	return *(int*)MapViewOfFile(
+	HANDLE messageSizeView = MapViewOfFile(
 		InitFile,
 		FILE_MAP_ALL_ACCESS,
 		0,
 		0,
 		4);
+
+	int result = *(int*)messageSizeView;
+	UnmapViewOfFile(messageSizeView);
+	return result;
 }
 
 void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
