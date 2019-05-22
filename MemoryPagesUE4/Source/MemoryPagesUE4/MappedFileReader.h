@@ -30,17 +30,25 @@ struct Gis3DObjectProxy
 	float Height;
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+struct GoToInstruction
+{
+public:
+	int Index;
+	float X;
+	float Y;
+	bool IsProcessed;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FStructReceivedDelegate, float, X, float, Y);
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MEMORYPAGESUE4_API UMappedFileReader : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UMappedFileReader();
-
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStructReceivedDelegate);
-	void StructReceived();
 
 	UPROPERTY(BlueprintAssignable)
 	FStructReceivedDelegate onStructReceived;
@@ -51,19 +59,26 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 
-public:	
+public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+
 private:
 	HANDLE hMapFile;
-	HANDLE GoToFile;
 	bool Initialized = false;
 
 	void ReadInitializationFromMemory(LayerProxy* layers, Gis3DObjectProxy* gisObjects);
 
-	HANDLE GotoMutex;
+
+	HANDLE GoToFile = nullptr;
+	HANDLE GoToMutex = nullptr;
+
+	GoToInstruction* GoToInstruction;
 	int LastGoToMessageIndex = 0;
-	bool ReadGoToMemory(float* x, float* y);
+
+	void InitializeGoToFile();
+	void OpenGoToMutex();
+
+	bool ReadGoToMemory(float& x, float& y);
 };

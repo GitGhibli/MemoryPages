@@ -26,9 +26,6 @@ void UMappedFileReader::BeginPlay()
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 }
 
-void UMappedFileReader::StructReceived() {
-}
-
 // Called every frame
 void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -41,65 +38,72 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 		ReadInitializationFromMemory(layers, gisObjects);
 	}
 	else {
-		float* x = nullptr;
-		float* y = nullptr;
+		float x;
+		float y;
 
 		if (ReadGoToMemory(x, y)) {
-			onStructReceived.Broadcast();
+			onStructReceived.Broadcast(x, y);
 		}
 	}
 }
 
-bool UMappedFileReader::ReadGoToMemory(float* x, float* y) {
-	if (GoToFile == NULL) {
-		GoToFile = OpenFileMapping(
+void UMappedFileReader::InitializeGoToFile()
+{
+	GoToFile = OpenFileMapping(
+		FILE_MAP_ALL_ACCESS,
+		FALSE,
+		GoToFileName);
+
+	if (GoToFile) {
+		GoToInstruction = (struct GoToInstruction*)MapViewOfFile(
+			GoToFile,
 			FILE_MAP_ALL_ACCESS,
-			FALSE,
-			GoToFileName);
+			0,
+			0,
+			13);
+	}
+}
+
+void UMappedFileReader::OpenGoToMutex()
+{
+	GoToMutex = OpenMutex(
+		MUTEX_ALL_ACCESS,
+		FALSE,
+		TEXT("GoToLocationMutex"));
+
+}
+
+bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
+
+	if (!GoToFile) {
+		InitializeGoToFile();
 	}
 
-	if (GotoMutex == NULL) {
-		GotoMutex = OpenMutex(
-			MUTEX_ALL_ACCESS,
-			FALSE,
-			TEXT("GoToLocationMutex"));
-	}
-
-	if (GoToFile != NULL) {
-		if (GotoMutex != NULL && WaitForSingleObject(GotoMutex, 1) == WAIT_OBJECT_0) {
-
-			auto gotoStruct = (int*)MapViewOfFile(
-				GoToFile,
-				FILE_MAP_ALL_ACCESS,
-				0,
-				0,
-				13);
-
-			if (gotoStruct == nullptr)
-			{
-				ReleaseMutex(GotoMutex);
-				return false;
-			}
-
-			if (*gotoStruct > LastGoToMessageIndex) {
-				UE_LOG(LogTemp, Warning, TEXT("Goto message came"));
-
-				x = &((float*)gotoStruct)[1];
-				y = &((float*)gotoStruct)[2];
-
-				auto byteArray = (byte*)gotoStruct;
-				byteArray[12] = true;
-
-				ReleaseMutex(GotoMutex);
-				LastGoToMessageIndex++;
-				return true;
-			}
-
-			ReleaseMutex(GotoMutex);
-			return false;
+	if (GoToFile) {
+		if (!GoToMutex) {
+			OpenGoToMutex();
 		}
+		
+		if (GoToMutex != NULL && WaitForSingleObject(GoToMutex, 1) == WAIT_OBJECT_0) {
 
-		return false;
+			if (GoToInstruction != NULL)
+			{
+				if (GoToInstruction->Index > LastGoToMessageIndex) {
+					UE_LOG(LogTemp, Warning, TEXT("Goto message came"));
+
+					x = GoToInstruction->X;
+					y = GoToInstruction->Y;
+
+					GoToInstruction->IsProcessed = true;
+					LastGoToMessageIndex++;
+
+					ReleaseMutex(GoToMutex);
+					return true;
+				}
+			}
+
+			ReleaseMutex(GoToMutex);
+		}
 	}
 
 	return false;
