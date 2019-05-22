@@ -30,6 +30,35 @@ struct Gis3DObjectProxy
 	float Height;
 };
 
+USTRUCT(BlueprintType)
+struct FGis3DObject {
+	GENERATED_USTRUCT_BODY()
+
+		UPROPERTY(BlueprintReadOnly)
+		int32 Id;
+
+	UPROPERTY(BlueprintReadOnly)
+		int32 LayerId;
+
+	UPROPERTY(BlueprintReadOnly)
+		FString ShortName;
+
+	UPROPERTY(BlueprintReadOnly)
+		FString Name;
+
+	UPROPERTY(BlueprintReadOnly)
+		FString Description;
+
+	UPROPERTY(BlueprintReadOnly)
+		float X;
+
+	UPROPERTY(BlueprintReadOnly)
+		float Y;
+
+	UPROPERTY(BlueprintReadOnly)
+		float Height;
+};
+
 struct GoToInstruction
 {
 public:
@@ -39,7 +68,8 @@ public:
 	bool IsProcessed;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FStructReceivedDelegate, float, X, float, Y);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGotoReceived, float, X, float, Y);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInitalizationReceivedDelegate, TArray<FGis3DObject>, Gis3DObjects);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MEMORYPAGESUE4_API UMappedFileReader : public UActorComponent
@@ -51,7 +81,10 @@ public:
 	UMappedFileReader();
 
 	UPROPERTY(BlueprintAssignable)
-	FStructReceivedDelegate onStructReceived;
+	FGotoReceived onGoToReceived;
+
+	UPROPERTY(BlueprintAssignable)
+	FInitalizationReceivedDelegate onInitializationReceived;
 
 protected:
 	// Called when the game starts
@@ -70,9 +103,11 @@ private:
 	bool Initialized = false;
 
 	int GetInitContentSize();
-	void ReadInitContent(int contentSize, LayerProxy* layers, Gis3DObjectProxy* gisObjects);
-	void ReadInitializationFromMemory(LayerProxy* layers, Gis3DObjectProxy* gisObjects);
-	
+	void ReadInitContent(int contentSize, LayerProxy* layers, TArray<FGis3DObject>* gisObjects);
+	void ReadInitializationFromMemory(LayerProxy* layers, TArray<FGis3DObject>* gisObjects);
+
+	FGis3DObject ToFGis3DObject(Gis3DObjectProxy proxy);
+
 	HANDLE GoToFile = nullptr;
 	HANDLE GoToMutex = nullptr;
 
