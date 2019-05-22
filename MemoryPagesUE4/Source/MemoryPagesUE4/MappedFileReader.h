@@ -59,6 +59,24 @@ struct FGis3DObject {
 		float Height;
 };
 
+USTRUCT(BlueprintType)
+struct FGis3DLayer
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	int Id;
+	
+	UPROPERTY(BlueprintReadOnly)
+	int ParentId;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString Name;
+
+	UPROPERTY(BlueprintReadOnly)
+	FColor Color;
+};
+
 struct GoToInstruction
 {
 public:
@@ -69,7 +87,7 @@ public:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGotoReceived, float, X, float, Y);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInitalizationReceivedDelegate, TArray<FGis3DObject>, Gis3DObjects);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInitalizationReceivedDelegate, TArray<FGis3DObject>, Gis3DObjects, TArray<FGis3DLayer>, Layers);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MEMORYPAGESUE4_API UMappedFileReader : public UActorComponent
@@ -103,9 +121,10 @@ private:
 	bool Initialized = false;
 
 	int GetInitContentSize();
-	void ReadInitContent(int contentSize, LayerProxy* layers, TArray<FGis3DObject>* gisObjects);
-	void ReadInitializationFromMemory(LayerProxy* layers, TArray<FGis3DObject>* gisObjects);
+	void ReadInitContent(int contentSize, TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects);
+	void ReadInitializationFromMemory(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects);
 
+	FGis3DLayer ToLayer(LayerProxy proxy);
 	FGis3DObject ToFGis3DObject(Gis3DObjectProxy proxy);
 
 	HANDLE GoToFile = nullptr;

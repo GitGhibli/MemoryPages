@@ -34,13 +34,13 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (!Initialized) {
-		LayerProxy * layers = nullptr;
+		TArray<FGis3DLayer>* layers = new TArray<FGis3DLayer>();
 		TArray<FGis3DObject>* gisObjects = new TArray<FGis3DObject>();
 
 		ReadInitializationFromMemory(layers, gisObjects);
 
 		if (Initialized) {
-			onInitializationReceived.Broadcast(*gisObjects);
+			onInitializationReceived.Broadcast(*gisObjects, *layers);
 		}
 	}
 	else {
@@ -109,8 +109,18 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 	return false;
 }
 
+FGis3DLayer UMappedFileReader::ToLayer(LayerProxy proxy) {
+	FGis3DLayer layer;
+	layer.Id = proxy.Id;
+	layer.Name = proxy.Name;
+	layer.ParentId = proxy.ParentId;
+	layer.Color = FColor(proxy.R, proxy.G, proxy.B, proxy.A);
+	return layer;
+}
+
 FGis3DObject UMappedFileReader::ToFGis3DObject(Gis3DObjectProxy proxy) {
 	FGis3DObject gisObject;
+	
 	gisObject.Id = proxy.Id;
 	gisObject.LayerId = proxy.LayerId;
 	gisObject.ShortName = proxy.ShortName;
@@ -123,7 +133,7 @@ FGis3DObject UMappedFileReader::ToFGis3DObject(Gis3DObjectProxy proxy) {
 	return gisObject;
 }
 
-void UMappedFileReader::ReadInitContent(int contentSize, LayerProxy* layers, TArray<FGis3DObject>* gisObjects)
+void UMappedFileReader::ReadInitContent(int contentSize, TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
 {
 	auto pointer = (byte*)MapViewOfFile(
 		InitFile,
@@ -134,10 +144,10 @@ void UMappedFileReader::ReadInitContent(int contentSize, LayerProxy* layers, TAr
 
 	int layersCount = (int)pointer[4]; //count of layers which follow
 
-	layers = (LayerProxy*)&pointer[8]; //Start of layers array
+	LayerProxy* layersProxies = (LayerProxy*)&pointer[8]; //Start of layers array
 	for (auto i = 0; i < layersCount; i++)
 	{
-		auto layerProxy = &layers[i];
+		layers->Add(ToLayer(layersProxies[i]));
 		UE_LOG(LogTemp, Warning, TEXT("Layer initialized"));
 	}
 
@@ -163,7 +173,7 @@ int UMappedFileReader::GetInitContentSize() {
 		4);
 }
 
-void UMappedFileReader::ReadInitializationFromMemory(LayerProxy * layers, TArray<FGis3DObject>* gisObjects)
+void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
 {
 	if (!InitFile) {
 		InitFile = OpenFileMapping(
