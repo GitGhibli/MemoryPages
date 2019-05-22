@@ -66,15 +66,6 @@ void UMappedFileReader::InitializeGoToFile()
 	}
 }
 
-void UMappedFileReader::OpenGoToMutex()
-{
-	GoToMutex = OpenMutex(
-		MUTEX_ALL_ACCESS,
-		FALSE,
-		TEXT("GoToLocationMutex"));
-
-}
-
 bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 	if (!GoToFile) {
@@ -83,9 +74,12 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 	if (GoToFile) {
 		if (!GoToMutex) {
-			OpenGoToMutex();
+			GoToMutex = OpenMutex(
+				MUTEX_ALL_ACCESS,
+				FALSE,
+				TEXT("GoToLocationMutex"));
 		}
-		
+
 		if (GoToMutex != NULL && WaitForSingleObject(GoToMutex, 1) == WAIT_OBJECT_0) {
 
 			if (GoToInstruction != NULL)
@@ -111,71 +105,78 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 	return false;
 }
 
+void UMappedFileReader::ReadInitContent(int contentSize, LayerProxy* layers, Gis3DObjectProxy* gisObjects)
+{
+	auto pointer = (byte*)MapViewOfFile(
+		InitFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		contentSize);
+
+	int layersCount = (int)pointer[4]; //count of layers which follow
+
+	layers = (LayerProxy*)&pointer[8]; //Start of layers array
+	for (auto i = 0; i < layersCount; i++)
+	{
+		auto layerProxy = &layers[i];
+		UE_LOG(LogTemp, Warning, TEXT("Layer initialized"));
+	}
+
+	int layersSize = layersCount * sizeof(LayerProxy);
+	int gisCount = (int)pointer[8 + layersSize]; //count of gisObjects which follow
+
+	gisObjects = (Gis3DObjectProxy*)&pointer[8 + layersSize + 4]; //Start of gisObjectsArray
+	for (auto i = 0; i < gisCount; i++)
+	{
+		auto gisProxy = &gisObjects[i];
+		UE_LOG(LogTemp, Warning, TEXT("GisObject initialized"));
+	}
+
+	pointer[contentSize - 1] = true;
+}
+
+int UMappedFileReader::GetInitContentSize() {
+	return *(int*)MapViewOfFile(
+		InitFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		4);
+}
+
 void UMappedFileReader::ReadInitializationFromMemory(LayerProxy * layers, Gis3DObjectProxy * gisObjects)
 {
-	if (hMapFile == NULL) {
-		hMapFile = OpenFileMapping(
+	if (!InitFile) {
+		InitFile = OpenFileMapping(
 			FILE_MAP_ALL_ACCESS,
 			FALSE,
 			szName);
 	}
 
-	if (hMapFile != NULL) {
+	if (InitFile) {
+		if (!InitMutex) {
+			InitMutex = OpenMutex(
+				MUTEX_ALL_ACCESS,
+				FALSE,
+				TEXT("MMFMutex"));
+		}
 
-		HANDLE hMutex = OpenMutex(
-			MUTEX_ALL_ACCESS,
-			FALSE,
-			TEXT("MMFMutex"));
-
-		if (hMutex != NULL && WaitForSingleObject(hMutex, 1) == WAIT_OBJECT_0) {
-
-			auto pointerToFileSize = (int*)MapViewOfFile(
-				hMapFile,
-				FILE_MAP_ALL_ACCESS,
-				0,
-				0,
-				4);
-
-			if (pointerToFileSize == nullptr || *pointerToFileSize == 0) {
-				ReleaseMutex(hMutex);
+		if (InitMutex != NULL && WaitForSingleObject(InitMutex, 1) == WAIT_OBJECT_0) {
+			int contentSize = GetInitContentSize();
+			if (contentSize == 0) {
+				ReleaseMutex(InitMutex);
 				return;
 			}
 
-			UE_LOG(LogTemp, Warning, TEXT("Message size"));
-
-			LPVOID pointer = MapViewOfFile(
-				hMapFile,
-				FILE_MAP_ALL_ACCESS,
-				0,
-				0,
-				*pointerToFileSize + 4);
-
-			int* layersCountPtr = (int*)pointer;
-
-			LayerProxy* layers = (LayerProxy*)(layersCountPtr + 2);
-			for (auto i = 0; i < *(layersCountPtr + 1); i++)
-			{
-				auto layerProxy = &layers[i];
-				UE_LOG(LogTemp, Warning, TEXT("Layer initialized"));
-			}
-
-			int* gisCountPtr = (int*)&layers[*(layersCountPtr + 1)];
-
-			Gis3DObjectProxy* gisObjects = (Gis3DObjectProxy*)(gisCountPtr + 1);
-			for (auto i = 0; i < *gisCountPtr; i++)
-			{
-				auto gisProxy = &gisObjects[i];
-				UE_LOG(LogTemp, Warning, TEXT("GisObject initialized"));
-			}
-
-			auto byteArray = (byte*)pointer;
-			byteArray[*pointerToFileSize - 1] = true;
+			ReadInitContent(contentSize, layers, gisObjects);
 
 			Initialized = true;
 
-			CloseHandle(hMapFile);
-			ReleaseMutex(hMutex);
+			ReleaseMutex(InitMutex);
 		}
+
+		CloseHandle(InitFile);
 	}
 }
 

@@ -65,12 +65,14 @@ public:
 
 
 private:
-	HANDLE hMapFile;
+	HANDLE InitFile = nullptr;
+	HANDLE InitMutex = nullptr;
 	bool Initialized = false;
 
+	int GetInitContentSize();
+	void ReadInitContent(int contentSize, LayerProxy* layers, Gis3DObjectProxy* gisObjects);
 	void ReadInitializationFromMemory(LayerProxy* layers, Gis3DObjectProxy* gisObjects);
-
-
+	
 	HANDLE GoToFile = nullptr;
 	HANDLE GoToMutex = nullptr;
 
@@ -78,6 +80,5 @@ private:
 	int LastGoToMessageIndex = 0;
 
 	void InitializeGoToFile();
-	void OpenGoToMutex();
 	bool ReadGoToMemory(float& x, float& y);
 };
