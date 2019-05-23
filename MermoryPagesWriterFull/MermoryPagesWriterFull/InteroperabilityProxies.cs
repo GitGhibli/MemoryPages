@@ -2,7 +2,7 @@
 
 namespace Interoperability
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct LayerProxy
     {
         public int Id;
@@ -22,7 +22,7 @@ namespace Interoperability
         public byte A;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct Gis3DObjectProxy
     {
         public int Id;

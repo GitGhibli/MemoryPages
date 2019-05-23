@@ -14,8 +14,8 @@ namespace MemoryPagesWriterFull
 
         Mutex Mutex = new Mutex(false, "MMFMutex");
 
-        private const int LayerProxySize = sizeof(int) * 2 + 256 + 4 * sizeof(byte);
-        private const int Gis3DProxySize = sizeof(int) * 2 + (3 * 256) + 3 * sizeof(float);
+        private const int LayerProxySize = sizeof(int) * 2 + 256*2 + 4 * sizeof(byte);
+        private const int Gis3DProxySize = sizeof(int) * 2 + (3 * (256*2)) + 3 * sizeof(float);
 
         private MemoryMappedViewStream stream;
         private MemoryMappedViewAccessor accessor;

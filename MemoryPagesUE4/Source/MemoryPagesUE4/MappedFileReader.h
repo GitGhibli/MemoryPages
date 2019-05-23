@@ -11,7 +11,7 @@ struct LayerProxy
 {
 	int Id;
 	int ParentId;
-	char Name[256];
+	wchar_t Name[256];
 	byte R;
 	byte G;
 	byte B;
@@ -22,9 +22,9 @@ struct Gis3DObjectProxy
 {
 	int Id;
 	int LayerId;
-	char ShortName[256];
-	char Name[256];
-	char Description[256];
+	wchar_t ShortName[256];
+	wchar_t Name[256];
+	wchar_t Description[256];
 	float X;
 	float Y;
 	float Height;
