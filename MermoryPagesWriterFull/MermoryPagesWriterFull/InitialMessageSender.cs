@@ -8,38 +8,34 @@ using System.Threading;
 
 namespace MemoryPagesWriterFull
 {
-    class InitialMemoryPagesWriter : IDisposable
+    class InitialMessageSender
     {
         private int MemoryFileSize;
 
         Mutex Mutex = new Mutex(false, "MMFMutex");
 
-        private const int LayerProxySize = sizeof(int) * 2 + 256*2 + 4 * sizeof(byte);
-        private const int Gis3DProxySize = sizeof(int) * 2 + (3 * (256*2)) + 3 * sizeof(float);
-
-        private MemoryMappedViewStream stream;
-        private MemoryMappedViewAccessor accessor;
-        private MemoryMappedFile memoryMappedFile;
-        private BinaryWriter writer;
-
-        public InitialMemoryPagesWriter(int memoryFileSize)
+        private int LayerProxySize = Marshal.SizeOf<LayerProxy>();
+        private int Gis3DProxySize = Marshal.SizeOf<Gis3DObjectProxy>();
+        
+        private void Write(MemoryMappedFile mappedFile, byte[] byteArray)
         {
-            MemoryFileSize = memoryFileSize;
-            memoryMappedFile = MemoryMappedFile.CreateNew("InitializationMapFile", memoryFileSize, MemoryMappedFileAccess.ReadWrite);
-            stream = memoryMappedFile.CreateViewStream();
-            accessor = memoryMappedFile.CreateViewAccessor();
-            writer = new BinaryWriter(stream);
-        }
-
-        public void Write(Layer[] layers, Gis3DObject[] gis3DObjects)
-        {
-            var byteArray = GetByteArray(MapToProxy(layers), MapToProxy(gis3DObjects));
+            var writer = new BinaryWriter(mappedFile.CreateViewStream());
 
             Mutex.WaitOne();
             writer.Write(byteArray);
             writer.Flush();
             Mutex.ReleaseMutex();
+            writer.Close();
+        }
 
+        public void Send(Layer[] layers, Gis3DObject[] gis3DObjects)
+        {
+            var byteArray = GetByteArray(MapToProxy(layers), MapToProxy(gis3DObjects));
+
+            var memoryMappedFile = MemoryMappedFile.CreateNew("InitializationMapFile", byteArray.Length, MemoryMappedFileAccess.ReadWrite);
+            Write(memoryMappedFile, byteArray);
+
+            var accessor = memoryMappedFile.CreateViewAccessor();
             while (true)
             {
                 Thread.Sleep(1);
@@ -50,11 +46,13 @@ namespace MemoryPagesWriterFull
                 if (isProcessed)
                 {
                     Mutex.ReleaseMutex();
-                    return;
+                    break;
                 }
 
                 Mutex.ReleaseMutex();
             }
+
+            memoryMappedFile.Dispose();
         }
 
         public byte[] GetByteArray(LayerProxy[] layers, Gis3DObjectProxy[] gis3Ds)
@@ -133,15 +131,6 @@ namespace MemoryPagesWriterFull
             }
 
             return result;
-        }
-
-        public void Dispose()
-        {
-            writer.Close();
-            writer.Dispose();
-            stream.Close();
-            stream.Dispose();
-            memoryMappedFile.Dispose();
         }
     }
 }

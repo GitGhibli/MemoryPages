@@ -28,13 +28,13 @@ namespace Interoperability
         public int Id;
         public int LayerId;
 
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
         public string ShortName;
 
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
         public string Name;
 
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
         public string Description;
 
         public float X;

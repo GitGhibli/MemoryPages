@@ -22,9 +22,9 @@ struct Gis3DObjectProxy
 {
 	int Id;
 	int LayerId;
-	wchar_t ShortName[256];
+	wchar_t ShortName[64];
 	wchar_t Name[256];
-	wchar_t Description[256];
+	wchar_t Description[1024];
 	float X;
 	float Y;
 	float Height;

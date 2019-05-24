@@ -46,7 +46,7 @@
   <ItemGroup>
     <Compile Include="Gis3DObject.cs" />
     <Compile Include="GoToLocationMMFWriter.cs" />
-    <Compile Include="InitialMemoryPagesWriter.cs" />
+    <Compile Include="InitialMessageSender.cs" />
     <Compile Include="Interoperability.cs" />
     <Compile Include="InteroperabilityProxies.cs" />
     <Compile Include="Layer.cs" />

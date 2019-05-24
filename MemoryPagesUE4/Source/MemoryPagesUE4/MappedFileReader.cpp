@@ -207,11 +207,10 @@ void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers
 			ReadInitContent(contentSize, layers, gisObjects);
 
 			Initialized = true;
+			CloseHandle(InitFile);
 
 			ReleaseMutex(InitMutex);
 		}
-
-		CloseHandle(InitFile);
 	}
 }
 
