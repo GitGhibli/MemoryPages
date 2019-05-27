@@ -57,6 +57,7 @@ void UMappedFileReader::BeginPlay()
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	UnmapViewOfFile(GoToInstruction);
+
 	UnmapViewOfFile(FeedbackProxy);
 }
 
@@ -147,6 +148,11 @@ void UMappedFileReader::InitializeFeedbackFile()
 		FALSE,
 		feedbackFileName);
 
+	FeedbackMutex = OpenMutex(
+		MUTEX_ALL_ACCESS,
+		FALSE,
+		TEXT("FeedbackMutex"));
+
 	if (!feedbackFile) {
 		feedbackFile = CreateFileMapping(
 			INVALID_HANDLE_VALUE,
@@ -155,6 +161,11 @@ void UMappedFileReader::InitializeFeedbackFile()
 			0,
 			sizeof(FeedbackProxy),
 			feedbackFileName);
+
+		FeedbackMutex = CreateMutex(
+			NULL,
+			FALSE,
+			TEXT("FeedbackMutex"));
 	}
 
 	FeedbackProxy = (byte*)MapViewOfFile(feedbackFile,
@@ -162,13 +173,6 @@ void UMappedFileReader::InitializeFeedbackFile()
 		0,
 		0,
 		4 + 1024 * 2 + 1);
-
-	CloseHandle(feedbackFile);
-
-	FeedbackMutex = CreateMutex(
-		NULL,
-		FALSE,
-		TEXT("FeedbackMutex"));
 }
 
 void UMappedFileReader::Initialize() {

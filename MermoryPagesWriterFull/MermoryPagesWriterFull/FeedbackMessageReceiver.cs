@@ -27,30 +27,32 @@ namespace MemoryPagesWriterFull
             {
                 Mutex mutex = null;
 
+                if (!Mutex.TryOpenExisting("FeedbackMutex", out mutex))
+                {
+                    mutex = new Mutex(false, "FeedbackMutex");
+                }
+
                 while (true)
                 {
-                    if (mutex != null || Mutex.TryOpenExisting("FeedbackMutex", out mutex))
+                    if (mutex.WaitOne(1))
                     {
-                        if (mutex.WaitOne(1))
+                        byte[] buffer = new byte[4 + 1024 * 2 + 1];
+                        reader.ReadArray(0, buffer, 0, buffer.Length);
+                        reader.Read(0, out int messageIndex);
+
+                        if (messageIndex > MessageIndex)
                         {
-                            byte[] buffer = new byte[4 + 1024 * 2 + 1];
-                            reader.ReadArray(0, buffer, 0, buffer.Length);
-                            reader.Read(0, out int messageIndex);
-
-                            if (messageIndex > MessageIndex)
+                            char[] messageArray = new char[1024];
+                            reader.ReadArray<char>(4, messageArray, 0, 1024);
+                            string result = new string(messageArray).TrimEnd('\0');
+                            lock (Lock)
                             {
-                                char[] messageArray = new char[1024];
-                                reader.ReadArray<char>(4, messageArray, 0, 1024);
-                                string result = new string(messageArray).TrimEnd('\0');
-                                lock (Lock)
-                                {
-                                    Console.WriteLine(result);
-                                }
-                                MessageIndex++;
+                                Console.WriteLine(result);
                             }
-
-                            mutex.ReleaseMutex();
+                            MessageIndex++;
                         }
+
+                        mutex.ReleaseMutex();
                     }
                 }
             }
