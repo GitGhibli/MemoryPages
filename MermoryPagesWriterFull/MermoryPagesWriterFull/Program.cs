@@ -29,26 +29,6 @@ namespace MemoryPagesWriterFull
             GoToLocationCycle();
         }
 
-        private static void WriteToConsole(string message)
-        {
-            //lock (ConsoleLock)
-            //{
-            //    Console.WriteLine(message);
-            //}
-
-            Console.WriteLine(message);
-        }
-
-        private static ConsoleKeyInfo ReadKeyFromConsole()
-        {
-            //lock (ConsoleLock)
-            //{
-            //    return Console.ReadKey();
-            //}
-
-            return Console.ReadKey();
-        }
-
         private static void GoToLocationCycle()
         {
             int index = 1;
@@ -59,10 +39,10 @@ namespace MemoryPagesWriterFull
             {
                 while (true)
                 {
-                    WriteToConsole("To send 'Go to location message' press any key");
-                    ReadKeyFromConsole();
+                    Console.WriteLine("To send 'Go to location message' press any key");
+                    Console.ReadKey();
                     writer.Write(x * index + floatingPart, y * index * 2 + floatingPart);
-                    WriteToConsole("Message processed");
+                    Console.WriteLine("Message processed");
                     index++;
                 }
             }

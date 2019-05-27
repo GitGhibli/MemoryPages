@@ -20,16 +20,14 @@ UMappedFileReader::UMappedFileReader()
 
 void UMappedFileReader::SendFeedback(FString feedbackMessage)
 {
-	//Async(EAsyncExecution::ThreadPool, )
 	Buffer = new byte[4 + 1024 * 2 + 1];
 	for (int i = 0; i < 4 + 1024 * 2 + 1; i++) {
 		Buffer[i] = '\0';
 	}
-	
-	auto messageIndexPtr = (int*)Buffer;
-	memcpy(messageIndexPtr, &lastFeedbackMessageIndex, sizeof(int));
-	lastFeedbackMessageIndex++;
 
+	auto messageIndexPtr = (int*)Buffer;
+	memcpy(messageIndexPtr, &++lastFeedbackMessageIndex, sizeof(int));
+	
 	auto messageContent = (TCHAR*)(&Buffer[4]);
 	memcpy(messageContent, *feedbackMessage, feedbackMessage.Len()*2 + 1);
 
@@ -55,23 +53,10 @@ void UMappedFileReader::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeFeedbackFile();
-
-	FeedbackProxy = (byte*)MapViewOfFile(FeedbackFile,
-		FILE_MAP_ALL_ACCESS,
-		0,
-		0,
-		4 + 256 * 2 + 1);
-
-	FeedbackMutex = CreateMutex(
-		NULL,
-		FALSE,
-		TEXT("FeedbackMutex"));
 }
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	UnmapViewOfFile(GoToInstruction);
-
-	CloseHandle(FeedbackFile);
 	UnmapViewOfFile(FeedbackProxy);
 }
 
@@ -157,13 +142,13 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 void UMappedFileReader::InitializeFeedbackFile()
 {
-	FeedbackFile = OpenFileMapping(
+	HANDLE feedbackFile = OpenFileMapping(
 		FILE_MAP_ALL_ACCESS,
 		FALSE,
 		feedbackFileName);
 
-	if (!FeedbackFile) {
-		FeedbackFile = CreateFileMapping(
+	if (!feedbackFile) {
+		feedbackFile = CreateFileMapping(
 			INVALID_HANDLE_VALUE,
 			NULL,
 			PAGE_READWRITE,
@@ -171,6 +156,19 @@ void UMappedFileReader::InitializeFeedbackFile()
 			sizeof(FeedbackProxy),
 			feedbackFileName);
 	}
+
+	FeedbackProxy = (byte*)MapViewOfFile(feedbackFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		4 + 1024 * 2 + 1);
+
+	CloseHandle(feedbackFile);
+
+	FeedbackMutex = CreateMutex(
+		NULL,
+		FALSE,
+		TEXT("FeedbackMutex"));
 }
 
 void UMappedFileReader::Initialize() {
