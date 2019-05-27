@@ -94,7 +94,7 @@ public:
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGotoReceived, float, X, float, Y);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInitalizationReceivedDelegate, TArray<FGis3DObject>, Gis3DObjects, TArray<FGis3DLayer>, Layers);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInitalizationReceivedDelegate, TArray<FGis3DLayer>, Layers, TArray<FGis3DObject>, Gis3DObjects);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MEMORYPAGESUE4_API UMappedFileReader : public UActorComponent
@@ -123,17 +123,19 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+		
 
 private:
 	//Initialization mapping
 	HANDLE InitFile = nullptr;
 	HANDLE InitMutex = nullptr;
 	bool Initialized = false;
+	bool Initializing = false;
 
 	int GetInitContentSize();
 	void ReadInitContent(int contentSize, TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects);
-	void ReadInitializationFromMemory(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects);
+	void ProcessInitMessage(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects);
+	void Initialize();
 
 	FGis3DLayer ToLayer(LayerProxy proxy);
 	FGis3DObject ToFGis3DObject(Gis3DObjectProxy proxy);

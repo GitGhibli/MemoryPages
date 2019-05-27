@@ -80,15 +80,8 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!Initialized) {
-		TArray<FGis3DLayer>* layers = new TArray<FGis3DLayer>();
-		TArray<FGis3DObject>* gisObjects = new TArray<FGis3DObject>();
-
-		ReadInitializationFromMemory(layers, gisObjects);
-
-		if (Initialized) {
-			onInitializationReceived.Broadcast(*gisObjects, *layers);
-		}
+	if (!Initialized && !Initializing) {
+		Initialize();
 	}
 	else {
 		float x;
@@ -180,6 +173,28 @@ void UMappedFileReader::InitializeFeedbackFile()
 	}
 }
 
+void UMappedFileReader::Initialize() {
+	Initializing = true;
+	TArray<FGis3DLayer>* layers = new TArray<FGis3DLayer>();
+	TArray<FGis3DObject>* gisObjects = new TArray<FGis3DObject>();
+
+	TFunction<void()> Task = [this, layers, gisObjects]() {
+		ProcessInitMessage(layers, gisObjects);
+	};
+
+	TFunction<void()> Callback = [this, layers, gisObjects]() {
+		if (Initialized) {
+			UE_LOG(LogTemp, Warning, TEXT("Callback: layers count %d"), layers->Num());
+			UE_LOG(LogTemp, Warning, TEXT("Callback: objects count %d"), gisObjects->Num());
+			onInitializationReceived.Broadcast(*layers, *gisObjects);
+		}
+
+		Initializing = false;
+	};
+
+	Async(EAsyncExecution::ThreadPool, Task, Callback);
+}
+
 FGis3DLayer UMappedFileReader::ToLayer(LayerProxy proxy) {
 	FGis3DLayer layer;
 	layer.Id = proxy.Id;
@@ -213,24 +228,26 @@ void UMappedFileReader::ReadInitContent(int contentSize, TArray<FGis3DLayer>* la
 		0,
 		contentSize);
 
-	int layersCount = (int)pointer[4]; //count of layers which follow
+	int* layersCountPtr = (int*)&pointer[4]; //count of layers which follow
 
 	LayerProxy* layersProxies = (LayerProxy*)&pointer[8]; //Start of layers array
-	for (auto i = 0; i < layersCount; i++)
+	for (auto i = 0; i < *layersCountPtr; i++)
 	{
 		layers->Add(ToLayer(layersProxies[i]));
-		UE_LOG(LogTemp, Warning, TEXT("Layer initialized"));
 	}
 
-	int layersSize = layersCount * sizeof(LayerProxy);
-	int gisCount = (int)pointer[8 + layersSize]; //count of gisObjects which follow
+	UE_LOG(LogTemp, Warning, TEXT("Message content: Layers received: %d"), *layersCountPtr);
+
+	int layersSize = *layersCountPtr * sizeof(LayerProxy);
+	int* gisCountPtr = (int*)&pointer[8 + layersSize]; //count of gisObjects which follow
 
 	Gis3DObjectProxy* gisObjectsProxies = (Gis3DObjectProxy*)&pointer[8 + layersSize + 4]; //Start of gisObjectsArray
-	for (auto i = 0; i < gisCount; i++)
+	for (auto i = 0; i < *gisCountPtr; i++)
 	{
 		gisObjects->Add(ToFGis3DObject(gisObjectsProxies[i]));
-		UE_LOG(LogTemp, Warning, TEXT("GisObject initialized"));
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Message content: Objects received: %d"), *gisCountPtr);
 
 	pointer[contentSize - 1] = true;
 
@@ -250,7 +267,7 @@ int UMappedFileReader::GetInitContentSize() {
 	return result;
 }
 
-void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
+void UMappedFileReader::ProcessInitMessage(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
 {
 	if (!InitFile) {
 		InitFile = OpenFileMapping(
@@ -268,6 +285,7 @@ void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers
 		}
 
 		if (InitMutex != NULL && WaitForSingleObject(InitMutex, 1) == WAIT_OBJECT_0) {
+			UE_LOG(LogTemp, Warning, TEXT("Initializing"));
 			int contentSize = GetInitContentSize();
 			if (contentSize == 0) {
 				ReleaseMutex(InitMutex);
