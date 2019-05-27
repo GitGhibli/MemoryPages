@@ -46,9 +46,15 @@
     <ClInclude Include="..\..\Source\MemoryPagesUE4\MappedFileReader.h">
       <Filter>Source\MemoryPagesUE4</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\MemoryPagesUE4\SendFeedbackAsync.h">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\MemoryPagesUE4\MappedFileReader.cpp">
+      <Filter>Source\MemoryPagesUE4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\MemoryPagesUE4\SendFeedbackAsync.cpp">
       <Filter>Source\MemoryPagesUE4</Filter>
     </ClCompile>
   </ItemGroup>

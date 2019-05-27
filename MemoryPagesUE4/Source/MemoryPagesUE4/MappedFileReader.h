@@ -30,6 +30,13 @@ struct Gis3DObjectProxy
 	float Height;
 };
 
+struct FeedbackProxy
+{
+	int Index;
+	TCHAR Message[1024];
+	bool Processed;
+};
+
 USTRUCT(BlueprintType)
 struct FGis3DObject {
 	GENERATED_USTRUCT_BODY()
@@ -98,6 +105,9 @@ public:
 	// Sets default values for this component's properties
 	UMappedFileReader();
 
+	UFUNCTION(BlueprintCallable)
+	void SendFeedback(FString feedbackMessage);
+
 	UPROPERTY(BlueprintAssignable)
 	FGotoReceived onGoToReceived;
 
@@ -116,6 +126,7 @@ public:
 
 
 private:
+	//Initialization mapping
 	HANDLE InitFile = nullptr;
 	HANDLE InitMutex = nullptr;
 	bool Initialized = false;
@@ -127,6 +138,7 @@ private:
 	FGis3DLayer ToLayer(LayerProxy proxy);
 	FGis3DObject ToFGis3DObject(Gis3DObjectProxy proxy);
 
+	//Goto instruction mapping
 	HANDLE GoToFile = nullptr;
 	HANDLE GoToMutex = nullptr;
 
@@ -135,4 +147,16 @@ private:
 
 	void InitializeGoToFile();
 	bool ReadGoToMemory(float& x, float& y);
+
+	//Feedback mapping
+	HANDLE FeedbackFile = nullptr;
+	HANDLE FeedbackMutex = nullptr;
+
+	void InitializeFeedbackFile();
+	void TryWriteToMemory();
+	
+	byte* Buffer;
+	byte* FeedbackProxy;
+	int lastFeedbackMessageIndex = 0;
+	bool FeedbackSent = true;
 };

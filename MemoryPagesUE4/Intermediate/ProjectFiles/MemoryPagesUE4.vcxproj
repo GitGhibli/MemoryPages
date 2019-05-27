@@ -406,6 +406,8 @@
     <NMakeOutput>..\..\Binaries\HTML5\MemoryPagesUE4-HTML5-Shipping.js</NMakeOutput>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\MemoryPagesUE4\SendFeedbackAsync.cpp" />
+    <ClInclude Include="..\..\Source\MemoryPagesUE4\SendFeedbackAsync.h" />
     <None Include="..\..\MemoryPagesUE4.uproject" />
     <None Include="..\..\Source\MemoryPagesUE4.Target.cs" />
     <None Include="..\..\Source\MemoryPagesUE4Editor.Target.cs" />

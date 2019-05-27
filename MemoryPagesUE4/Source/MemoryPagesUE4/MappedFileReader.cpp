@@ -2,9 +2,11 @@
 
 #include "MappedFileReader.h"
 #include "Engine/Engine.h"
+#include "Async.h"
 
 TCHAR szName[] = TEXT("InitializationMapFile");
 TCHAR GoToFileName[] = TEXT("GotoLocationFile");
+TCHAR feedbackFileName[] = TEXT("FeedbackFile");
 
 // Sets default values for this component's properties
 UMappedFileReader::UMappedFileReader()
@@ -16,15 +18,61 @@ UMappedFileReader::UMappedFileReader()
 	// ...
 }
 
+void UMappedFileReader::SendFeedback(FString feedbackMessage)
+{
+	//Async(EAsyncExecution::ThreadPool, )
+	Buffer = new byte[4 + 1024 * 2 + 1];
+	for (int i = 0; i < 4 + 1024 * 2 + 1; i++) {
+		Buffer[i] = '\0';
+	}
+	
+	auto messageIndexPtr = (int*)Buffer;
+	memcpy(messageIndexPtr, &lastFeedbackMessageIndex, sizeof(int));
+	lastFeedbackMessageIndex++;
+
+	auto messageContent = (TCHAR*)(&Buffer[4]);
+	memcpy(messageContent, *feedbackMessage, feedbackMessage.Len()*2 + 1);
+
+	TryWriteToMemory();
+}
+
+void UMappedFileReader::TryWriteToMemory()
+{
+	if (WaitForSingleObject(FeedbackMutex, 1) == WAIT_OBJECT_0){
+		memcpy(FeedbackProxy, Buffer, 4 + 1024 + 1);
+		delete[] Buffer;
+		FeedbackSent = true;
+		ReleaseMutex(FeedbackMutex);
+	}
+	else {
+		FeedbackSent = false;
+	}
+}
 
 // Called when the game starts
 void UMappedFileReader::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeFeedbackFile();
+
+	FeedbackProxy = (byte*)MapViewOfFile(FeedbackFile,
+		FILE_MAP_ALL_ACCESS,
+		0,
+		0,
+		4 + 256 * 2 + 1);
+
+	FeedbackMutex = CreateMutex(
+		NULL,
+		FALSE,
+		TEXT("FeedbackMutex"));
 }
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	UnmapViewOfFile(GoToInstruction);
+
+	CloseHandle(FeedbackFile);
+	UnmapViewOfFile(FeedbackProxy);
 }
 
 // Called every frame
@@ -49,6 +97,10 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 		if (ReadGoToMemory(x, y)) {
 			onGoToReceived.Broadcast(x, y);
 		}
+	}
+
+	if (!FeedbackSent) {
+		TryWriteToMemory();
 	}
 }
 
@@ -108,6 +160,24 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 	}
 
 	return false;
+}
+
+void UMappedFileReader::InitializeFeedbackFile()
+{
+	FeedbackFile = OpenFileMapping(
+		FILE_MAP_ALL_ACCESS,
+		FALSE,
+		feedbackFileName);
+
+	if (!FeedbackFile) {
+		FeedbackFile = CreateFileMapping(
+			INVALID_HANDLE_VALUE,
+			NULL,
+			PAGE_READWRITE,
+			0,
+			sizeof(FeedbackProxy),
+			feedbackFileName);
+	}
 }
 
 FGis3DLayer UMappedFileReader::ToLayer(LayerProxy proxy) {
@@ -213,4 +283,3 @@ void UMappedFileReader::ReadInitializationFromMemory(TArray<FGis3DLayer>* layers
 		}
 	}
 }
-

@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FeedbackMessageReceiver.cs" />
     <Compile Include="Gis3DObject.cs" />
     <Compile Include="GoToLocationMMFWriter.cs" />
     <Compile Include="InitialMessageSender.cs" />
