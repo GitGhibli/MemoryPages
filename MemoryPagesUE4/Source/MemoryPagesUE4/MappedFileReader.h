@@ -151,6 +151,7 @@ private:
 	bool ReadGoToMemory(float& x, float& y);
 
 	//Feedback mapping
+	HANDLE FeedbackFile = nullptr;
 	HANDLE FeedbackMutex = nullptr;
 
 	void InitializeFeedbackFile();
@@ -158,6 +159,5 @@ private:
 	
 	byte* Buffer;
 	byte* FeedbackProxy;
-	int lastFeedbackMessageIndex = 0;
 	bool FeedbackSent = true;
 };

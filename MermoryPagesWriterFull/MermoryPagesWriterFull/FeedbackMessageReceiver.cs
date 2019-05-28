@@ -6,24 +6,25 @@ namespace MemoryPagesWriterFull
 {
     public class FeedbackMessageReceiver
     {
+        public static bool Run = true;
         private readonly object Lock;
-        private static int MessageIndex = 0;
-
+        
         public FeedbackMessageReceiver(object lockObj)
         {
             Lock = lockObj;
         }
 
-        public void Listen()
+        public Thread Listen()
         {
             Thread listener = new Thread(ReadSharedMemory);
             listener.IsBackground = true;
             listener.Start();
+            return listener;
         }
 
         private void ReadSharedMemory(object obj)
         {
-            using (var reader = MemoryMappedFile.CreateOrOpen("FeedbackFile", 4 + 1024 * 2 + 1).CreateViewAccessor())
+            using (var accessor = MemoryMappedFile.CreateOrOpen("FeedbackFile", 1 + 1024 * 2).CreateViewAccessor())
             {
                 Mutex mutex = null;
 
@@ -32,26 +33,23 @@ namespace MemoryPagesWriterFull
                     mutex = new Mutex(false, "FeedbackMutex");
                 }
 
-                while (true)
+                while (Run)
                 {
                     if (mutex.WaitOne(1))
                     {
-                        byte[] buffer = new byte[4 + 1024 * 2 + 1];
-                        reader.ReadArray(0, buffer, 0, buffer.Length);
-                        reader.Read(0, out int messageIndex);
+                        var isProcessed = accessor.ReadBoolean(0);
 
-                        if (messageIndex > MessageIndex)
+                        if (!isProcessed)
                         {
                             char[] messageArray = new char[1024];
-                            reader.ReadArray<char>(4, messageArray, 0, 1024);
+                            accessor.ReadArray<char>(1, messageArray, 0, 1024);
                             string result = new string(messageArray).TrimEnd('\0');
                             lock (Lock)
                             {
                                 Console.WriteLine(result);
                             }
-                            MessageIndex++;
+                            accessor.Write(0, true);
                         }
-
                         mutex.ReleaseMutex();
                     }
                 }

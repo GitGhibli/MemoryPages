@@ -1,17 +1,60 @@
 ﻿using ECC.Opsu.Gis3D.Contract;
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace MemoryPagesWriterFull
 {
     class Program
     {
         static object ConsoleLock = new object();
+        
+        [DllImport("Kernel32")]
+        private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
+
+        private delegate bool EventHandler(CtrlType sig);
+        static EventHandler _handler;
+
+        private static Thread ReceiverThread;
+
+        private enum CtrlType
+        {
+            CTRL_C_EVENT = 0,
+            CTRL_BREAK_EVENT = 1,
+            CTRL_CLOSE_EVENT = 2,
+            CTRL_LOGOFF_EVENT = 5,
+            CTRL_SHUTDOWN_EVENT = 6
+        }
+
+        private static bool Handler(CtrlType signal)
+        {
+            switch (signal)
+            {
+                case CtrlType.CTRL_BREAK_EVENT:
+                case CtrlType.CTRL_C_EVENT:
+                case CtrlType.CTRL_LOGOFF_EVENT:
+                case CtrlType.CTRL_SHUTDOWN_EVENT:
+                case CtrlType.CTRL_CLOSE_EVENT:
+                    Console.WriteLine("Closing");
+                    FeedbackMessageReceiver.Run = false;
+                    ReceiverThread.Join();
+                    Environment.Exit(0);
+                    return false;
+
+                default:
+                    return false;
+            }
+        }
 
         static void Main(string[] args)
         {
-            new FeedbackMessageReceiver(ConsoleLock).Listen();
+            ReceiverThread = new FeedbackMessageReceiver(ConsoleLock).Listen();
 
+            // Register the handler
+            _handler += new EventHandler(Handler);
+            SetConsoleCtrlHandler(_handler, true);
+            
             Layer[] layers = new Layer[100];
             for (int i = 0; i < layers.Length; i++)
             {
