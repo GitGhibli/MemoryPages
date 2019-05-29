@@ -8,7 +8,7 @@ namespace MemoryPagesWriterFull
     public class FeedbackMessageReceiver
     {
 
-        const string fileName = "D:\\Temp\\FeedbackFile";
+        string fileName = EnvironmentSettings.GetSharedAbsolutePath("FeedbackFile");
         private readonly object Lock;
         private static int MessageIndex = 0;
         private const int messageLength = 1024;

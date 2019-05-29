@@ -6,7 +6,7 @@ namespace MemoryPagesWriterFull
 {
     class GoToLocationMMFWriter : IDisposable
     {
-        private FileStream MyFile = File.Open("D:\\Temp\\GotoLocationFile", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+        private FileStream MyFile = File.Open(EnvironmentSettings.GetSharedAbsolutePath("GotoLocationFile"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
         private BinaryReader Reader;
 
         public GoToLocationMMFWriter()

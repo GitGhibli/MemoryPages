@@ -9,7 +9,7 @@ namespace MemoryPagesWriterFull
 {
     class InitialMessageSender
     {
-        const string fileName = "D:\\Temp\\InitializationFile";
+        string fileName = EnvironmentSettings.GetSharedAbsolutePath("InitializationFile");
         private int MemoryFileSize;
 
         Mutex Mutex = new Mutex(false, "MMFMutex");
