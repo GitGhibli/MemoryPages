@@ -115,6 +115,8 @@ public:
 	FInitalizationReceivedDelegate onInitializationReceived;
 
 	UPROPERTY(EditAnywhere)
+	FString AbsolutePathFile;
+
 	FString AbsolutePath;
 
 protected:

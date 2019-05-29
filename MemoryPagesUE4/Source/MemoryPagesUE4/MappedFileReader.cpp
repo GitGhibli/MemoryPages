@@ -60,6 +60,11 @@ void UMappedFileReader::BeginPlay()
 {
 	Super::BeginPlay();
 
+	std::ifstream file(*AbsolutePathFile, std::ios::ate);
+	if (file.is_open())	{		size_t size = file.tellg();		file.seekg(0, std::ios::beg);		char* buffer = new char[size];		file.read(buffer, size);		file.close();
+
+		AbsolutePath = FString(buffer);
+	}	else {		UE_LOG(LogTemp, Warning, TEXT("Absolute file path file not found"));		return;	}
 	InitializeFeedbackFile();
 }
 
