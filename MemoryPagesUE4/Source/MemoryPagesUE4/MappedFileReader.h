@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Windows.h"
+#include <fstream>
 #include "Components/ActorComponent.h"
 #include "MappedFileReader.generated.h"
 
@@ -87,10 +88,9 @@ struct FGis3DLayer
 struct GoToInstruction
 {
 public:
-	int Index;
+	bool IsProcessed;
 	float X;
 	float Y;
-	bool IsProcessed;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGotoReceived, float, X, float, Y);
@@ -126,8 +126,7 @@ public:
 		
 
 private:
-	//Initialization mapping
-	HANDLE InitFile = nullptr;
+	FILE* stream;
 	HANDLE InitMutex = nullptr;
 	bool Initialized = false;
 	bool Initializing = false;
@@ -141,13 +140,9 @@ private:
 	FGis3DObject ToFGis3DObject(Gis3DObjectProxy proxy);
 
 	//Goto instruction mapping
-	HANDLE GoToFile = nullptr;
+	FILE * gotoStream;
 	HANDLE GoToMutex = nullptr;
 
-	GoToInstruction* GoToInstruction;
-	int LastGoToMessageIndex = 0;
-
-	void InitializeGoToFile();
 	bool ReadGoToMemory(float& x, float& y);
 
 	//Feedback mapping

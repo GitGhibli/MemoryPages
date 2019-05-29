@@ -28,14 +28,14 @@ void UMappedFileReader::SendFeedback(FString feedbackMessage)
 	*Buffer = false;
 
 	auto messageContent = (TCHAR*)(&Buffer[1]);
-	memcpy(messageContent, *feedbackMessage, feedbackMessage.Len()*2 + 1);
+	memcpy(messageContent, *feedbackMessage, feedbackMessage.Len() * 2 + 1);
 
 	TryWriteToMemory();
 }
 
 void UMappedFileReader::TryWriteToMemory()
 {
-	if (WaitForSingleObject(FeedbackMutex, 1) == WAIT_OBJECT_0){
+	if (WaitForSingleObject(FeedbackMutex, 1) == WAIT_OBJECT_0) {
 		memcpy(FeedbackProxy, Buffer, 1 + 1024);
 		delete[] Buffer;
 		FeedbackSent = true;
@@ -55,8 +55,6 @@ void UMappedFileReader::BeginPlay()
 }
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	UnmapViewOfFile(GoToInstruction);
-
 	UnmapViewOfFile(FeedbackProxy);
 }
 
@@ -82,32 +80,13 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	}
 }
 
-void UMappedFileReader::InitializeGoToFile()
-{
-	GoToFile = OpenFileMapping(
-		FILE_MAP_ALL_ACCESS,
-		FALSE,
-		GoToFileName);
-
-	if (GoToFile) {
-		GoToInstruction = (struct GoToInstruction*)MapViewOfFile(
-			GoToFile,
-			FILE_MAP_ALL_ACCESS,
-			0,
-			0,
-			13);
-
-		CloseHandle(GoToFile);
-	}
-}
-
 bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
-	if (!GoToFile) {
-		InitializeGoToFile();
+	if (!gotoStream) {
+		gotoStream = _fsopen("D:\\Temp\\GotoLocationFile", "r+b", _SH_DENYNO);
 	}
 
-	if (GoToFile) {
+	if (gotoStream) {
 		if (!GoToMutex) {
 			GoToMutex = OpenMutex(
 				MUTEX_ALL_ACCESS,
@@ -117,24 +96,29 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 		if (GoToMutex != NULL && WaitForSingleObject(GoToMutex, 1) == WAIT_OBJECT_0) {
 
-			if (GoToInstruction != NULL)
-			{
-				if (GoToInstruction->Index > LastGoToMessageIndex) {
-					UE_LOG(LogTemp, Warning, TEXT("Goto message came"));
+			fseek(gotoStream, 0, SEEK_SET);
+			struct GoToInstruction* gotoInstruction = new GoToInstruction();
+			gotoInstruction->IsProcessed = true;
+			fread(gotoInstruction, sizeof(struct GoToInstruction), 1, gotoStream);
 
-					x = GoToInstruction->X;
-					y = GoToInstruction->Y;
+			if (!gotoInstruction->IsProcessed) {
+				UE_LOG(LogTemp, Warning, TEXT("Goto message came"));
 
-					GoToInstruction->IsProcessed = true;
-					LastGoToMessageIndex++;
+				x = gotoInstruction->X;
+				y = gotoInstruction->Y;
 
-					ReleaseMutex(GoToMutex);
-					return true;
-				}
+				fseek(gotoStream, 0, SEEK_SET);
+				byte* processed = new byte[1];
+				*processed = 1;
+				size_t f = fwrite(processed, 1, 1, gotoStream);
+
+				fflush(gotoStream);
+				ReleaseMutex(GoToMutex);
+				return true;
 			}
-
-			ReleaseMutex(GoToMutex);
 		}
+
+		ReleaseMutex(GoToMutex);
 	}
 
 	return false;
@@ -207,7 +191,7 @@ FGis3DLayer UMappedFileReader::ToLayer(LayerProxy proxy) {
 
 FGis3DObject UMappedFileReader::ToFGis3DObject(Gis3DObjectProxy proxy) {
 	FGis3DObject gisObject;
-	
+
 	gisObject.Id = proxy.Id;
 	gisObject.LayerId = proxy.LayerId;
 	gisObject.ShortName = proxy.ShortName;
@@ -222,70 +206,67 @@ FGis3DObject UMappedFileReader::ToFGis3DObject(Gis3DObjectProxy proxy) {
 
 void UMappedFileReader::ReadInitContent(int contentSize, TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
 {
-	auto pointer = (byte*)MapViewOfFile(
-		InitFile,
-		FILE_MAP_ALL_ACCESS,
-		0,
-		0,
-		contentSize);
+	int* layersCount = new int;
+	fread(layersCount, sizeof(int), 1, stream);
 
-	int* layersCountPtr = (int*)&pointer[4]; //count of layers which follow
+	LayerProxy* layersProxies = new LayerProxy[*layersCount];
+	fread(layersProxies, sizeof(LayerProxy), *layersCount, stream);
 
-	LayerProxy* layersProxies = (LayerProxy*)&pointer[8]; //Start of layers array
-	for (auto i = 0; i < *layersCountPtr; i++)
+	for (auto i = 0; i < *layersCount; i++)
 	{
 		layers->Add(ToLayer(layersProxies[i]));
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Message content: Layers received: %d"), *layersCountPtr);
+	UE_LOG(LogTemp, Warning, TEXT("Message content: Layers received: %d"), *layersCount);
 
-	int layersSize = *layersCountPtr * sizeof(LayerProxy);
-	int* gisCountPtr = (int*)&pointer[8 + layersSize]; //count of gisObjects which follow
+	int* objectsCount = new int;
+	fread(objectsCount, sizeof(int), 1, stream);
 
-	Gis3DObjectProxy* gisObjectsProxies = (Gis3DObjectProxy*)&pointer[8 + layersSize + 4]; //Start of gisObjectsArray
-	for (auto i = 0; i < *gisCountPtr; i++)
+	Gis3DObjectProxy* objectProxies = new Gis3DObjectProxy[*objectsCount];
+	fread(objectProxies, sizeof(Gis3DObjectProxy), *objectsCount, stream);
+
+	for (auto i = 0; i < *objectsCount; i++)
 	{
-		gisObjects->Add(ToFGis3DObject(gisObjectsProxies[i]));
+		gisObjects->Add(ToFGis3DObject(objectProxies[i]));
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Message content: Objects received: %d"), *gisCountPtr);
+	UE_LOG(LogTemp, Warning, TEXT("Message content: Objects received: %d"), *objectsCount);
 
-	pointer[contentSize - 1] = true;
+	fseek(stream, -1, SEEK_END);
+	byte* processed = new byte[1];
+	*processed = 1;
+	size_t f = fwrite(processed, 1, 1, stream);
 
-	UnmapViewOfFile(pointer);
+	fflush(stream);
+
+	UE_LOG(LogTemp, Warning, TEXT("Procesed"));
 }
 
 int UMappedFileReader::GetInitContentSize() {
-	HANDLE messageSizeView = MapViewOfFile(
-		InitFile,
-		FILE_MAP_ALL_ACCESS,
-		0,
-		0,
-		4);
-
-	int result = *(int*)messageSizeView;
-	UnmapViewOfFile(messageSizeView);
-	return result;
+	int* buffer = new int();
+	fread(buffer, sizeof(int), 1, stream);
+	return *buffer;
 }
 
 void UMappedFileReader::ProcessInitMessage(TArray<FGis3DLayer>* layers, TArray<FGis3DObject>* gisObjects)
 {
-	if (!InitFile) {
-		InitFile = OpenFileMapping(
-			FILE_MAP_ALL_ACCESS,
+	if (!InitMutex) {
+		InitMutex = OpenMutex(
+			MUTEX_ALL_ACCESS,
 			FALSE,
-			szName);
-	}
-
-	if (InitFile) {
+			TEXT("MMFMutex"));
 		if (!InitMutex) {
-			InitMutex = OpenMutex(
-				MUTEX_ALL_ACCESS,
+			InitMutex = CreateMutex(
+				NULL,
 				FALSE,
 				TEXT("MMFMutex"));
 		}
+	}
 
-		if (InitMutex != NULL && WaitForSingleObject(InitMutex, 1) == WAIT_OBJECT_0) {
+	if (InitMutex != NULL && WaitForSingleObject(InitMutex, 1) == WAIT_OBJECT_0) {
+		stream = _fsopen("D:\\Temp\\InitializationFile", "r+b", _SH_DENYNO);
+
+		if (stream) {
 			UE_LOG(LogTemp, Warning, TEXT("Initializing"));
 			int contentSize = GetInitContentSize();
 			if (contentSize == 0) {
@@ -296,7 +277,8 @@ void UMappedFileReader::ProcessInitMessage(TArray<FGis3DLayer>* layers, TArray<F
 			ReadInitContent(contentSize, layers, gisObjects);
 
 			Initialized = true;
-			CloseHandle(InitFile);
+			fflush(stream);
+			fclose(stream);
 
 			ReleaseMutex(InitMutex);
 		}
