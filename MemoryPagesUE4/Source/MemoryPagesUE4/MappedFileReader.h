@@ -114,6 +114,9 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FInitalizationReceivedDelegate onInitializationReceived;
 
+	UPROPERTY(EditAnywhere)
+	FString AbsolutePath;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

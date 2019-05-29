@@ -98,7 +98,7 @@ void UMappedFileReader::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 	if (!gotoStream) {
-		gotoStream = _fsopen("D:\\Temp\\GotoLocationFile", "r+b", _SH_DENYNO);
+		gotoStream = _wfsopen(*(AbsolutePath + FString("\\GotoLocationFile")), L"r+b", _SH_DENYNO);
 	}
 
 	if (gotoStream) {
@@ -147,7 +147,7 @@ void UMappedFileReader::InitializeFeedbackFile()
 		FALSE,
 		TEXT("FeedbackMutex"));
 
-	feedbackStream = _fsopen("D:\\Temp\\FeedbackFile", "r+b", _SH_DENYNO);
+	feedbackStream = _wfsopen(*(AbsolutePath + FString("\\FeedbackFile")), L"r+b", _SH_DENYNO);
 }
 
 void UMappedFileReader::Initialize() {
@@ -256,7 +256,7 @@ void UMappedFileReader::ProcessInitMessage(TArray<FGis3DLayer>* layers, TArray<F
 	}
 
 	if (InitMutex != NULL && WaitForSingleObject(InitMutex, 1) == WAIT_OBJECT_0) {
-		stream = _fsopen("D:\\Temp\\InitializationFile", "r+b", _SH_DENYNO);
+		stream = _wfsopen(*(AbsolutePath + FString("\\InitializationFile")), L"r+b", _SH_DENYNO);
 
 		if (stream) {
 			UE_LOG(LogTemp, Warning, TEXT("Initializing"));
