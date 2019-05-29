@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 namespace MemoryPagesWriterFull
@@ -38,7 +39,7 @@ namespace MemoryPagesWriterFull
                 {
                     writer.Write(true); //indicates no new messages;
 
-                    using (var reader = new BinaryReader(stream))
+                    using (var reader = new BinaryReader(stream, Encoding.Unicode))
                     {
                         while (true)
                         {
@@ -54,6 +55,7 @@ namespace MemoryPagesWriterFull
                                     Console.WriteLine(result);
                                     stream.Seek(0, SeekOrigin.Begin);
                                     writer.Write(true);
+                                    writer.Flush();
                                 }
 
                                 mutex.ReleaseMutex();

@@ -36,9 +36,17 @@ void UMappedFileReader::SendFeedback(FString feedbackMessage)
 void UMappedFileReader::TryWriteToMemory()
 {
 	if (WaitForSingleObject(FeedbackMutex, 1) == WAIT_OBJECT_0) {
-		fwrite(Buffer, 1, 1 + 1024, feedbackStream);
+		fseek(feedbackStream, 0, SEEK_SET);
+		size_t f = fwrite(Buffer, 1, 1 + 1024 * 2, feedbackStream);
+		if (f == 0) {
+			UE_LOG(LogTemp, Warning, TEXT("Writing prohibited"));
+		}
+
+		int error = ferror(feedbackStream);
+
 		fflush(feedbackStream);
 		delete[] Buffer;
+
 		FeedbackSent = true;
 		ReleaseMutex(FeedbackMutex);
 	}
@@ -117,7 +125,7 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 				fseek(gotoStream, 0, SEEK_SET);
 				byte* processed = new byte[1];
 				*processed = 1;
-				size_t f = fwrite(processed, 1, 1, gotoStream);
+				fwrite(processed, 1, 1, gotoStream);
 
 				fflush(gotoStream);
 				ReleaseMutex(GoToMutex);
