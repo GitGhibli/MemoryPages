@@ -18,7 +18,7 @@ namespace MemoryPagesWriterFull
 
         public void Write(float x, float y)
         {
-            byte[] byteArray = new byte[sizeof(int) + 2 * sizeof(float) + 1];
+            byte[] byteArray = new byte[1 + 2 * sizeof(float)];
             Buffer.BlockCopy(BitConverter.GetBytes(false), 0, byteArray, 0, sizeof(bool));
             Buffer.BlockCopy(BitConverter.GetBytes(x), 0, byteArray, 1, sizeof(float));
             Buffer.BlockCopy(BitConverter.GetBytes(y), 0, byteArray, 5, sizeof(float));

@@ -67,7 +67,7 @@ void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	if (feedbackStream) {
 		fclose(feedbackStream);
 	}
-	
+
 	if (gotoStream) {
 		fclose(gotoStream);
 	}
@@ -112,15 +112,16 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 		if (GoToMutex != NULL && WaitForSingleObject(GoToMutex, 1) == WAIT_OBJECT_0) {
 
 			fseek(gotoStream, 0, SEEK_SET);
-			struct GoToInstruction* gotoInstruction = new GoToInstruction();
-			gotoInstruction->IsProcessed = true;
-			fread(gotoInstruction, sizeof(struct GoToInstruction), 1, gotoStream);
+			bool* isProcessed = new bool;
+			fread(isProcessed, sizeof(bool), 1, gotoStream);
 
-			if (!gotoInstruction->IsProcessed) {
+			if (!*isProcessed) {
 				UE_LOG(LogTemp, Warning, TEXT("Goto message came"));
 
-				x = gotoInstruction->X;
-				y = gotoInstruction->Y;
+				float* coordinate = new float[2];
+				fread(coordinate, sizeof(float), 2, gotoStream);
+				x = coordinate[0];
+				y = coordinate[1];
 
 				fseek(gotoStream, 0, SEEK_SET);
 				byte* processed = new byte[1];
