@@ -146,7 +146,7 @@ private:
 	bool ReadGoToMemory(float& x, float& y);
 
 	//Feedback mapping
-	HANDLE FeedbackFile = nullptr;
+	FILE * feedbackStream;
 	HANDLE FeedbackMutex = nullptr;
 
 	void InitializeFeedbackFile();

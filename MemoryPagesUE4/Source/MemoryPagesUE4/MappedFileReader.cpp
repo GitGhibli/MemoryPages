@@ -36,7 +36,8 @@ void UMappedFileReader::SendFeedback(FString feedbackMessage)
 void UMappedFileReader::TryWriteToMemory()
 {
 	if (WaitForSingleObject(FeedbackMutex, 1) == WAIT_OBJECT_0) {
-		memcpy(FeedbackProxy, Buffer, 1 + 1024);
+		fwrite(Buffer, 1, 1 + 1024, feedbackStream);
+		fflush(feedbackStream);
 		delete[] Buffer;
 		FeedbackSent = true;
 		ReleaseMutex(FeedbackMutex);
@@ -55,7 +56,13 @@ void UMappedFileReader::BeginPlay()
 }
 
 void UMappedFileReader::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	UnmapViewOfFile(FeedbackProxy);
+	if (feedbackStream) {
+		fclose(feedbackStream);
+	}
+	
+	if (gotoStream) {
+		fclose(gotoStream);
+	}
 }
 
 // Called every frame
@@ -126,36 +133,12 @@ bool UMappedFileReader::ReadGoToMemory(float& x, float& y) {
 
 void UMappedFileReader::InitializeFeedbackFile()
 {
-	FeedbackFile = OpenFileMapping(
-		FILE_MAP_ALL_ACCESS,
-		FALSE,
-		feedbackFileName);
-
 	FeedbackMutex = OpenMutex(
 		MUTEX_ALL_ACCESS,
 		FALSE,
 		TEXT("FeedbackMutex"));
 
-	if (!FeedbackFile) {
-		FeedbackFile = CreateFileMapping(
-			INVALID_HANDLE_VALUE,
-			NULL,
-			PAGE_READWRITE,
-			0,
-			sizeof(FeedbackProxy),
-			feedbackFileName);
-
-		FeedbackMutex = CreateMutex(
-			NULL,
-			FALSE,
-			TEXT("FeedbackMutex"));
-	}
-
-	FeedbackProxy = (byte*)MapViewOfFile(FeedbackFile,
-		FILE_MAP_ALL_ACCESS,
-		0,
-		0,
-		4 + 1024 * 2 + 1);
+	feedbackStream = _fsopen("D:\\Temp\\FeedbackFile", "r+b", _SH_DENYNO);
 }
 
 void UMappedFileReader::Initialize() {
